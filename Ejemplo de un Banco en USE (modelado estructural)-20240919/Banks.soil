@@ -1,0 +1,8 @@
+!new Bank('Bank1')
+!new Account('Account1')
+!Account1.balance:=1000
+!new Person('John')
+!John.age:=17
+!insert(Bank1,Account1) into AccountOfBanks
+!insert(John,Account1) into Use
+!insert(John,Account1) into Ownership

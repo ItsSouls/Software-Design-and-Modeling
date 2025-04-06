@@ -1,0 +1,25 @@
+context Empresa
+--- Cada empresa tiene un solo Director  "#" para seleccionar valor concreto del enumerado
+    inv Solos1Director : 
+        self.contrato -> 
+            select (c | c.puesto=#Director) -> size()=1
+--- Cada empresa tiene un solo Gerente
+    inv Solo1Gerente : 
+        self.contrato -> 
+            select (c | c.puesto=#Gerente) -> size()=1
+--- Cada empresa tiene al menos un TrabajadorBase
+    inv Almenos1TrabajadorBase : 
+        self.contrato -> 
+            select (c | c.puesto=#TrabajadorBase) -> size()>=1
+--- En toda empresa, el Gerentea cobra más que el TrabajadorBase
+    inv GerenteCobraMasQueTrabajadorBase :
+        self.contrato -> 
+            select (c | c.puesto=#Gerente)->forAll(
+                g|self.contrato -> select(c | c.puesto=#TrabajadorBase)-> forAll(
+                    tb| g.salario >tb.salario))
+--- En toda empresa, el Director cobra más que el Gerente
+    inv GerenteCobraMasQueTrabajadorBase :
+        self.contrato -> 
+            select (c | c.puesto=#Director)->forAll(
+                d|self.contrato -> select(c | c.puesto=#Gerente)-> forAll(
+                    g| d.salario >g.salario)) 

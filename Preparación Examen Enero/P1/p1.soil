@@ -1,0 +1,103 @@
+reset
+
+!new Avion('ABC123')
+!ABC123.estado := #Estacionado
+
+!new Aerolinea('Iberia')
+!Iberia.nombre := 'Iberia'
+
+!new Aeropuerto('Barajas')
+!Barajas.ciudad := 'Madrid'
+
+!new Piloto('Pil1')
+
+!new Persona('Pepe')
+!Pepe.nombre := 'Pepe'
+!Pepe.edad := 52
+
+!insert(Pil1, Pepe) into esPiloto
+
+!insert(Iberia,Pil1) into Trabaja
+
+!insert(Iberia, ABC123) into Contrato
+!Contrato1.meses := 24
+!Contrato1.preciomes := 10000
+
+!new Hangar('Hangar1')
+!Hangar1.capacidad := 3
+
+!new Desguace('Desguace1')
+!Desguace1.capacidad := 4
+
+!insert(Barajas,Desguace1) into DesguaceSeEncuentra
+!insert(Barajas,Hangar1) into HangarSeEncuentra
+
+!insert(ABC123,Hangar1) into esGuardado
+
+!new Avion('ABC967')
+!ABC967.estado := #Relegado
+
+!new Aerolinea('Vueling')
+!Vueling.nombre := 'Vueling'
+
+!new Aeropuerto('PalmaMallorca')
+!PalmaMallorca.ciudad := 'Palma'
+
+!new Piloto('Pil2')
+
+!new Persona('Borja')
+!Borja.nombre := 'Borja'
+!Borja.edad := 34
+
+!insert(Pil2, Borja) into esPiloto
+
+!new Piloto ('Pil3')
+
+!new Persona('Lucia')
+!Lucia.nombre := 'Lucia'
+!Lucia.edad := 49
+
+!insert(Pil3, Lucia) into esPiloto
+
+!new Desguace ('Desguace2')
+!Desguace2.capacidad := 2
+
+!new Hangar ('Hangar2')
+!Hangar2.capacidad := 3
+
+!new Vuelo('AGP2024')
+!AGP2024.id := 1
+!AGP2024.kilometros := 2000
+
+!new Vuelo ('GRD2003')
+!GRD2003.id := 2
+!GRD2003.kilometros := 800
+
+!new Pasajero ('Pas1')
+
+!new Persona('Pedro')
+!Pedro.nombre := 'Pedro'
+!Pedro.edad := 21
+
+!insert(Pedro, Pas1) into esPasajero
+
+!insert(Vueling, ABC967) into Contrato
+!Contrato2.meses := 36
+!Contrato2.preciomes := 18000
+
+!insert(ABC967,Desguace2) into esArreglado
+!insert(Vueling,Pil2) into Trabaja
+!insert(Vueling,Pil3) into Trabaja
+!insert(Vueling,Pil1) into Trabaja
+
+!insert(PalmaMallorca,Desguace2) into DesguaceSeEncuentra
+!insert(PalmaMallorca,Hangar2) into HangarSeEncuentra 
+
+!insert(ABC967,AGP2024) into esRealizado
+!insert (ABC967,GRD2003) into esRealizado
+
+
+!insert(Pil2,AGP2024) into PilotajePrincipal
+!insert(Pil3,AGP2024) into PilotajeSecundario
+
+!insert(Pas1,AGP2024) into Viaja

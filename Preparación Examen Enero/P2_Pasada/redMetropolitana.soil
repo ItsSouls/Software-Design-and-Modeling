@@ -1,0 +1,23 @@
+reset
+
+!new Estacion('e1')
+!new Estacion('e2')
+!new Estacion('e3')
+
+!new Linea('l1')
+!new Linea('l2')
+
+!new Tren('t1')
+!insert(t1,l1) into Ruta
+
+!new Segmento('s1')
+!insert(e1,s1) into SegmentoOrigen
+!insert(e2,s1) into SegmentoDestino
+
+!insert(l1, s1) into Pertenece 
+
+!new Via('v1')
+!insert(s1,v1) into Ida
+!insert(s1,v1) into Vuelta
+
+!insert(t1,e1) into Parada

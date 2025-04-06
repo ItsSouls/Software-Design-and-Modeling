@@ -1,0 +1,144 @@
+reset
+
+!new Clock('Reloj')
+
+-- Ciudades
+
+!new Ciudad('Huelva')
+!new Ciudad('Cadiz')
+!new Ciudad('Malaga')
+!new Ciudad('Granada')
+!new Ciudad('Almeria')
+!new Ciudad('Jaen')
+!new Ciudad('Cordoba')
+!new Ciudad('Sevilla')
+
+!insert(Malaga, Cadiz) into Recorrido
+!Recorrido1.kilometros := 103
+
+!insert(Malaga, Sevilla) into Recorrido
+!Recorrido2.kilometros := 150
+
+!insert(Malaga, Granada) into Recorrido
+!Recorrido3.kilometros := 176
+
+!insert(Huelva, Sevilla) into Recorrido
+!Recorrido4.kilometros := 233
+
+!insert(Huelva, Cadiz) into Recorrido
+!Recorrido5.kilometros := 250
+
+!insert(Cadiz, Sevilla) into Recorrido
+!Recorrido6.kilometros := 284
+
+!insert(Granada, Cordoba) into Recorrido
+!Recorrido7.kilometros := 349
+
+!insert(Granada, Jaen) into Recorrido
+!Recorrido8.kilometros := 296
+
+!insert(Granada, Almeria) into Recorrido
+!Recorrido9.kilometros := 229
+
+!insert(Jaen, Cordoba) into Recorrido
+!Recorrido10.kilometros := 253
+
+!insert(Cordoba, Sevilla) into Recorrido
+!Recorrido11.kilometros := 321
+
+-- Talleres
+
+!new TallerOficial('TOMalaga')
+!TOMalaga.duracionGarantia := 15
+!insert(Malaga, TOMalaga) into UbicacionTaller
+
+!new Taller('TMalaga')
+!insert(Malaga, TMalaga) into UbicacionTaller
+
+!new Taller('THuelva')
+!insert(Huelva, THuelva) into UbicacionTaller
+
+!new Taller('TCadiz')
+!insert(Cadiz, TCadiz) into UbicacionTaller
+
+!new TallerOficial('TOGranada')
+!TOGranada.duracionGarantia := 13
+!insert(Granada, TOGranada) into UbicacionTaller
+
+!new Taller('TAlmeria')
+!insert(Almeria, TAlmeria) into UbicacionTaller
+
+!new Taller('T1Jaen')
+!insert(Jaen, T1Jaen) into UbicacionTaller
+
+!new Taller('T2Jaen')
+!insert(Jaen, T2Jaen) into UbicacionTaller
+
+!new Taller('TCordoba')
+!insert(Cordoba, TCordoba) into UbicacionTaller
+
+!new TallerOficial('TOSevilla')
+!TOSevilla.duracionGarantia := 10
+!insert(Sevilla, TOSevilla) into UbicacionTaller
+
+-- Coches y paso del tiempo en el sistema
+
+!new Coche('Yaris')
+!Yaris.fechaMatriculacion := Reloj.now
+!Yaris.velocidad := 27
+
+!insert(Reloj, Yaris) into Time
+!insert(Yaris, Malaga) into UbicacionCoche
+
+!Reloj.tick()
+
+!Yaris.viajar(Malaga, Sevilla)
+
+!Reloj.tick()
+!Reloj.tick()
+
+!new Coche('Corolla')
+!Corolla.fechaMatriculacion := Reloj.now
+!Corolla.velocidad := 35
+
+!insert(Reloj, Corolla) into Time
+!insert(Corolla, Almeria) into UbicacionCoche
+
+!for i in Sequence{1..30} do Reloj.tick() end
+
+!new Coche('RAV4')
+!RAV4.fechaMatriculacion := Reloj.now
+!RAV4.velocidad := 32
+
+!insert(Reloj, RAV4) into Time
+!insert(RAV4, Cordoba) into UbicacionCoche
+
+!Yaris.viajar(Sevilla, Huelva)
+!RAV4.viajar(Cordoba, Sevilla)
+
+!for i in Sequence{1..50} do Reloj.tick() end
+
+!THuelva.iniciarRevision(Yaris, #Averia)
+!Reloj.tick()
+!Reloj.tick()
+!THuelva.finalizarRevision(Revision1)
+
+!for i in Sequence{1..25} do Reloj.tick() end
+
+!Yaris.viajar(Huelva, Cadiz)
+
+!TOSevilla.iniciarRevision(RAV4, #Averia)
+!Reloj.tick()
+!TOSevilla.finalizarRevision(Revision2)
+
+!for i in Sequence{1..250} do Reloj.tick() end
+
+!TCadiz.iniciarRevision(Yaris, #Averia)
+!TCadiz.finalizarRevision(Revision3)
+
+!for i in Sequence{1..75} do Reloj.tick() end
+
+!TAlmeria.iniciarRevision(Corolla, #Mantenimiento)
+!TAlmeria.finalizarRevision(Revision4)
+
+check

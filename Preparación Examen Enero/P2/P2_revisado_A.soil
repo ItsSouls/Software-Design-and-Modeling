@@ -1,0 +1,62 @@
+reset
+!new Clock('clock')
+!clock.now := 500
+!new Ciudad('Malaga')
+!new Ciudad('Sevilla')
+!new Ciudad('Granada')
+!insert(Malaga,Sevilla) into Recorrido --Recorrido1
+!Recorrido1.kilometros := 200
+!insert(Sevilla,Granada) into Recorrido --Recorrido2
+!Recorrido2.kilometros := 240
+!insert(Granada,Malaga) into Recorrido --Recorrido3
+!Recorrido3.kilometros := 120
+!insert(Granada,Granada) into Recorrido -- Para invariante "CiudadesDiferentes"
+!Recorrido4.kilometros := 0
+!insert(Granada,Malaga) into Recorrido
+!Recorrido5.kilometros := 200
+!new Viaje('v1')
+!v1.fechaSalida := 1
+!v1.fechaLlegada := 2
+!insert(v1,Recorrido1) into RecorridoViaje
+!new Viaje('v2')
+!v2.fechaSalida := 2
+!v2.fechaLlegada := 4
+!insert(v2,Recorrido2) into RecorridoViaje
+!new Viaje('v3')
+!v3.fechaSalida := 5
+!v3.fechaLlegada := 7
+!insert(v3,Recorrido3) into RecorridoViaje
+!insert(Malaga,v1) into OrigenViaje
+!insert(Sevilla,v1) into DestinoViaje
+!insert(Sevilla,v2) into OrigenViaje
+!insert(Granada,v2) into DestinoViaje
+!insert(Granada,v3) into OrigenViaje
+!insert(Malaga,v3) into DestinoViaje
+!new Coche('c1')
+!c1.matriculacion := 10
+!insert(c1,v1) into Viajar
+!insert(c1,v2) into Viajar
+!insert(c1,v3) into Viajar
+!insert(c1,Malaga) into UbicacionCoche
+!new Coche('c2')
+!c2.matriculacion := 310
+!insert(c2,Malaga) into UbicacionCoche
+!new Taller('t1')
+!new TallerOficial('to1')
+!to1.duracionGarantia:=100
+!insert(Malaga, t1) into UbicacionTaller
+!insert(Sevilla, to1) into UbicacionTaller
+!new Revision('r1')
+!r1.fechaInicio:=410
+!r1.fechaFin:=412
+!r1.tipo:=#Mantenimiento
+!insert(t1,r1) into TallerRevision
+!insert(c1,r1) into CocheRevision
+!new Coche('c3')
+!c3.matriculacion := 20
+!insert(c3,Malaga) into UbicacionCoche
+!new Revision('r2')
+!r2.fechaInicio:=495
+!r2.tipo:=#Mantenimiento
+!insert(t1,r2) into TallerRevision
+!insert(c3,r2) into CocheRevision 

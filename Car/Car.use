@@ -1,0 +1,75 @@
+model Car
+
+class Clock 
+  attributes
+    NOW : Integer init = 0 -- POSIX representation starting at 0
+    resolution: Integer init = 1 
+  operations
+    tick() 
+    begin
+      self.NOW := self.NOW + self.resolution
+      for o in self.ao do
+        o.tick()
+      end
+    end
+    run (n:Integer)
+      begin
+        for i in Sequence {1..n} do
+          self.tick()
+        end
+    end
+end
+
+abstract class ActiveObject -- real-time objects 
+  operations
+    tick()
+end
+
+association Time between 
+  Clock [1] 
+  ActiveObject [*] role ao ordered
+end
+
+class Car < ActiveObject
+  attributes
+    speed : Real init: 5
+    position : Real init: 0
+    isMoving : Boolean init: false
+  operations
+    accelerate() 
+      begin
+        self.speed := self.speed + 1
+      end
+      post IncreaseSpeed: self.speed = self.speed@pre + 1
+    decelerate() 
+    begin
+        if self.speed > 0 then
+        self.speed := self.speed - 1
+      end;
+    end
+    post DecreasesSpeed: self.speed@pre > 0 implies
+                          self.speed = self.speed@pre - 1 
+
+    startMoving()
+      begin
+        self.isMoving := true;
+      end
+      pre isNotMoving : not self.isNotMoving
+      post Moving : self.isMoving
+    stopMoving()
+      begin
+        self.isMoving := false;
+      end
+      pre isMoving : self.isMoving
+      post notMoving : not self.isMoving
+
+    tick()
+    begin
+      if self.isMoving then
+      slef.position := slef.position + self.speed * self.clock.resolution
+      end;
+    end
+    post carMoved : self.isMoving@pre implies
+                    self.position = self.position@pre +
+                                    self.speed * speed.clock.resolution
+end

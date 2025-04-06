@@ -1,0 +1,111 @@
+model definitivo
+
+enum tipoRevision {Mantenimiento, Averia}
+
+class Ciudad end
+
+associationclass Recorrido between
+Ciudad [*] role ciudadorigen
+Ciudad [*] role ciudaddestino
+attributes
+    km: Integer
+end
+
+class Coche
+attributes
+    matriculacion: Integer
+    kmRecorridos: Integer
+    enGarantia: Boolean
+    necesitaMantenimiento: Boolean
+end
+
+class Viaje
+attributes
+    fechaSalida: Integer
+    fechaLlegada: Integer
+end
+
+class Revision
+attributes
+    fechaInicio: Integer
+    fechaFin: Integer
+    tipo: tipoRevision
+end
+
+class Taller end
+
+class TallerOficial < Taller end
+
+-- Relaciones --
+
+association UbicacionCoche between
+Ciudad [1] role ciudad
+Coche [*] role coche
+end
+
+association OrigenViaje between
+Ciudad [1] role ciudadorigen
+Viaje [*] role origenviaje
+end
+
+association DestinoViaje between
+Ciudad [1] role ciudaddestino
+Viaje [*] role destinoviaje
+end
+
+composition UbicacionTaller between
+Ciudad [1] role ciudad
+Taller [*] role taller
+end
+
+composition TallerRevision between
+Revision [*] role revision
+Taller [1] role taller
+end
+
+composition Viajar between
+Coche [1] role coche
+Viaje [*] role viaje
+end
+
+association CocheRevision between
+Coche [1] role coche
+Revision [*] role revision
+end
+
+association RecorridoViaje between
+Recorrido [1] role recorrido
+Viaje [1] role viaje
+end
+
+constraints
+
+context Recorrido
+
+inv RecorridoMayoraCinco: self.km >= 5
+
+inv CiudadesDistintas: self.ciudadorigen <> self.ciudaddestino
+
+context Ciudad
+
+inv UnTallerOficialPorCiudad: self.taller -> select(t | t.oclIsTypeOf(TallerOficial)) -> size() <= 1
+
+context Coche
+
+inv RevisionesFechaInicioDespuesMatriculacion: self.revision -> forAll(f | f.fechaInicio > self.matriculacion)
+
+inv UnaRevisionComoMax: self.revision -> select(f | f.fechaFin = null) -> size() <= 1
+
+inv CocheEnMismaCiudadQueRevision: self.revision -> select(f | f.fechaFin = null) -> size() = 1 implies self.ciudad = self.revision -> select(f | f.fechaFin = null) -> asSequence() -> first().taller.ciudad
+
+inv UnSoloViajeEnCurso: self.viaje -> select(f | f.fechaLlegada = null) -> size() <= 1
+
+inv CocheEnCiudadOViajando: self.ciudad -> size() = 1 xor self.viaje -> select(f | f.fechaLlegada = null) -> size() = 1
+
+inv CocheEnUltimaCiudad: self.viaje -> size() > 0 and self.viaje -> select(v | v.fechaLlegada = null) -> size() = 0 implies self.ciudad = self.viaje -> sortedBy(v | v.fechaLlegada) -> last().ciudaddestino
+
+inv ViajesNoSolapados: self.viaje -> forAll(v1,v2 | v1 <> v2 implies v1.fechaSalida <> v2.fechaSalida and (v1.fechaLlegada <= v2.fechaSalida or v2.fechaLlegada <= v1.fechaSalida))
+
+inv CiudadesCoherentes: Sequence{1..self.viaje->size()-1} -> forAll(i | self.viaje -> asSequence() -> at(i).recorrido.ciudaddestino = self.viaje -> asSequence() -> at(i+1).recorrido.ciudadorigen)
+
+inv SumaKilometros: self.kmRecorridos = self.viaje -> select(v | v.fechaLlegada <> null)-> collect(v | v.recorrido.km) -> sum()

@@ -1,0 +1,145 @@
+model Aviacion
+
+enum EstadoAvion {Volando, Estacionado, Relegado}
+
+
+--CLASES------------------------------------------------------------------------------------------------------------
+
+class Avion
+attributes
+    vuelos: Integer derive: 
+                    self.vuelosRealizados -> size()
+    kilometros: Real derive: 
+                     self.vuelosRealizados -> collect(k | k.kilometros) -> sum()
+    estado: EstadoAvion
+end
+
+class Aerolinea
+end
+
+class Aeropuerto
+attributes
+    ciudad: String
+end
+
+class Localizacion
+attributes
+    capacidad: Integer
+end
+
+class Hangar < Localizacion
+end
+
+class Desguace < Localizacion
+end
+
+class Vuelo
+attributes
+    kilometros: Real
+end
+
+class Persona
+attributes
+    nombre: String
+    edad: Integer
+end
+
+class Piloto < Persona
+attributes
+    pro: Boolean derive: 
+                 self.vueloSecundario -> size() >= 2000 and self.vueloPrincipal -> size() >= 1000
+    kilometrosVolados: Real derive: 
+                            self.vueloPrincipal -> collect(v | v.kilometros) -> sum() + self.vueloSecundario -> collect(v | v.kilometros) -> sum()
+end
+
+class Pasajero < Persona
+end
+
+
+--RELACIONES--------------------------------------------------------------------------------------------------------
+
+associationclass Contrato between
+    Aerolinea [*] role aerolinea
+    Avion [*] role avion
+attributes
+    meses: Integer
+    precioMes: Real
+    precioTotal: Real derive: 
+                      self.meses * self.precioMes
+end
+
+composition DisponeHangar between
+    Aeropuerto [1] role aeropuerto
+    Hangar [1..*] role hangar
+end
+
+composition DisponeDesguace between
+    Aeropuerto [1] role aeropuerto
+    Desguace [0..1] role desguace
+end
+
+association PilotajePrincipal between
+    Vuelo [*] role vueloPrincipal
+    Piloto [1] role pilotoPrincipal
+end
+
+association PilotajeSecundario between
+    Vuelo [*] role vueloSecundario
+    Piloto [0..1] role pilotoSecundario
+end
+
+association Trabajo between
+    Aerolinea [0..2] role aerolinea
+    Piloto [*] role piloto
+end
+
+association SeEncuentra between
+    Avion [*] role avion
+    Localizacion [0..1] role localizacion
+end
+
+composition EsRealizado between
+    Avion [1] role avion
+    Vuelo [*] role vuelosRealizados
+end
+
+association Viaja between
+    Pasajero [1..*] role pasajeros
+    Vuelo [1] role vuelo
+end
+
+
+--RESTRICCIONES------------------------------------------------------------------------------------------------------
+constraints
+
+context Avion
+    -- Todo avión debe encontrarse volando, estacionado en un hangar o ha sido ya relegado.
+    inv estadoValido: self.estado = #Volando or self.estado = #Estacionado or self.estado = #Relegado
+
+    -- Los aviones que deben encontrarse en un desguace son aquellos que han completado los 1000 viajes.
+    inv relegadoADesguace: self.vuelos >= 1000 implies self.estado = #Relegado
+
+    -- Existe relacion entre avión y hangar cuando el estado del avión es estacionado.
+    inv relacionAvionHangar: self.estado = #Estacionado implies self.localizacion.oclIsTypeOf(Hangar)
+
+    -- Existe relacion entre avión y desguace cuando el estado del avión es relegado.
+    inv relacionAvionDesguace: self.estado = #Relegado implies self.localizacion.oclIsTypeOf(Desguace)
+
+context Vuelo
+    -- Lógicamente, los pilotos principal y secundario deben ser personas distintas.
+    inv pilotosSonPersonasDistintas: if self.pilotoSecundario <> null then self.pilotoPrincipal <> self.pilotoSecundario else true endif
+
+    -- Piloto principal y secundario trabajan en la misma aerolínea
+    inv pilotosMismaAerolinea: self.pilotoSecundario <> null implies self.pilotoPrincipal.aerolinea = self.pilotoSecundario.aerolinea
+
+context Aeropuerto
+    -- Los aeropuertos se ubican en ciudades, no pudiendo haber más de un aeropuerto en cada ciudad. 
+    inv unAeropuertoPorCiudad: Aeropuerto.allInstances() -> isUnique(a | a.ciudad)
+
+context Piloto
+    -- No se permite a un piloto trabajar o haber trabajado para más de dos aerolíneas diferentes. Cogemos todas las aerolineas donde trabaja piloto.
+    inv pilotoNoMasDeDosAerolineas: self.aerolinea -> size() <= 2
+
+context Localizacion
+    -- La cantidad de aviones en la localización no debe exceder su capacidad.
+    inv capacidadLocalizacion: self.avion -> size() <= self.capacidad

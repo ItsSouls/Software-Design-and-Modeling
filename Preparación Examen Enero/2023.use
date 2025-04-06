@@ -1,0 +1,190 @@
+model Universidad
+
+class Universidad
+    attributes nombre:String
+operations
+ matricular(t:Titulacion, a: Asignatura, c:Curso, p:Persona)
+ begin
+        declare i:ImparticionAsignatura;
+        i:=c.imparticionAsignatura->select(i|i.asignatura = a)->any(true);
+        insert (i,p) into Matricula;
+    end
+    pre TitulacionOK: self.titulacion->includes(t)
+    pre AsignaturaOK: t.asignatura->includes(a)
+    pre CursoOK: c.imparticionAsignatura->select(i|i.asignatura = a)->notEmpty()
+    pre PersonaOK1: let ia:ImparticionAsignatura = c.imparticionAsignatura->select(i|i.asignatura = a)->any(true) in
+                    ia.profesor<>p and ia.alumno->excludes(p) -- no es ni profesor ni alumno de esa imparticion de asignatura
+    pre PersonaOK2: a.imparticionAsignatura.matricula->select(m|m.alumno=p and m.aprobada)->isEmpty() -- no la tiene aprobada antes
+    pre TieneTituloGradoSiPosgrado: t.oclIsTypeOf(Master) implies p.titulo->select(t|t.titulacion.oclIsTypeOf(Grado))->notEmpty()
+    post Matriculado: let ia:ImparticionAsignatura = c.imparticionAsignatura->select(i|i.asignatura = a)->any(true) in
+                      ia.alumno->includes(p)
+
+expedirTitulo(t:Titulacion, p:Persona, c:Curso)
+begin
+    declare ti:Titulo;
+    ti:=new Titulo();
+    insert(t,ti) into Certificado;
+    insert(ti,p) into Titulado;
+    insert(ti,c) into CursoDelTitulo;
+    end
+    pre TitulacionOK: self.titulacion->includes(t)
+    pre NolotieneYa: p.titulo->select(ti|ti.titulacion=t)->isEmpty()
+    pre TieneCreditos: let imparticionAsignaturasAprobadas:Set(ImparticionAsignatura) = p.matricula->select(m|m.calificacion>=5)->collect(imparticionAsignatura)-> select(ia|ia.curso.anio<=c.anio and t.asignatura->includes(ia.asignatura))->asSet() in
+    imparticionAsignaturasAprobadas->collect(asignatura.creditos)->sum() >= if t.oclIsTypeOf(Master) then 60 else 240 endif
+    post: self.titulacion.titulo->one(ti|ti.curso=c and ti.persona=p)
+end
+
+abstract class Titulacion
+    attributes nombre:String
+end
+
+class Grado < Titulacion
+end
+
+class Master < Titulacion
+end
+
+composition Oferta between -- Requisito #3
+    Universidad [1]
+    Titulacion [*]
+end
+aggregation PlanEstudios between -- Requisito #1
+    Titulacion [*]
+    Asignatura [*]
+end
+
+class Asignatura -- Requisito #1
+    attributes
+    creditos:Integer init: 6
+end
+
+class ImparticionAsignatura
+end
+
+association ImparticionCurso between -- Requisito #2
+    ImparticionAsignatura [*]
+    Curso [1]
+end
+
+association AsignaturaCurso between -- Requisito #1
+    Asignatura [1] -- Materializacion
+    ImparticionAsignatura [*]
+end
+
+class Curso
+    attributes
+    anio:Integer
+end
+
+class Titulo
+attributes
+    nombreUniversidad:String derive: self.titulacion.universidad.nombre
+    nombreTitulacion:String derive: self.titulacion.nombre
+end
+
+composition Certificado between
+    Titulacion [1]
+    Titulo [*]
+end
+
+association Titulado between -- Requisito #14
+    Titulo [*]
+    Persona [1]
+end
+
+association CursoDelTitulo between
+    Titulo [*]
+    Curso [1]
+end
+
+associationclass Matricula between -- Requisito #6
+    ImparticionAsignatura [*]
+    Persona [*] role alumno
+attributes
+    calificacion : Integer
+    aprobada : Boolean derive: self.calificacion>=5
+operations
+    calificar(p:Persona,a:Persona, nota:Integer)
+    begin
+        self.calificacion:=nota;
+    end
+    pre Matriculado: self.imparticionAsignatura.profesor=p and self.alumno->includes(a)
+    pre NotaOK: nota>=0 and nota<=10
+    pre NoCalificadoYa: self.calificacion=null
+    post Calificado: self.calificacion=nota
+end
+
+association Docencia between -- Requisito #4
+    ImparticionAsignatura [*] role docencia
+    Persona [1] role profesor
+end
+
+class Persona
+end
+
+
+constraints
+
+context Persona 
+
+-- Requisito #5. Cada profesor no puede dar más de 4 asignaturas cada curso (independientemente del número de créditos que tengan).
+inv DocenciaLimitada: Curso.allInstances-> forAll (c | Persona.allInstances->forAll(p|p.docencia->select(ia|ia.curso=c)->size() <= 4))
+
+context Matricula 
+
+-- Requisito #6. Las notas son o null o un entero entre 0 y 10
+inv ValorCorrecto: self.calificacion<>null implies (self.calificacion>=0 and self.calificacion<=10)
+
+context Persona 
+
+-- Requisito #7. Un alumno solo puede matricularse hasta 3 veces de una misma asignatura en cursos distintos
+inv Solo3Convocatorias: self.imparticionAsignatura.asignatura -> forAll(a1 | self.imparticionAsignatura.asignatura -> select(a | a=a1) -> size() <=3)
+
+context Persona 
+
+-- Requisito #8. Un alumno solo puede aprobar una asignatura una vez, no pudiendo matricularse de asignaturas que ya ha aprobado en cursos anteriores.
+inv SoloUnaConvocatoriaAprobada: let asigs:Bag(Asignatura) = self.imparticionAsignatura.asignatura in 
+                                                            asigs->forAll(a|self.matricula->select(m |m.aprobada and m.imparticionAsignatura.asignatura=a)->size()<=1)
+                                                            and 
+                                                            self.matricula->forAll(m1,m2|m1<>m2 implies ((m1.imparticionAsignatura.asignatura=m2.imparticionAsignatura.asignatura and m1.aprobada) 
+                                                            implies (not m2.aprobada and m1.imparticionAsignatura.curso.anio > m2.imparticionAsignatura.curso.anio)))
+
+context Asignatura 
+
+-- Requisito #9. dos imparticiones de una asignatura no pueden coincidir en un mismo curso
+inv UnaImparticionPorCurso: self.imparticionAsignatura->forAll(i1,i2|i1<>i2 implies i1.curso.anio<>i2.curso.anio)
+
+context Curso 
+
+-- Requisito #10. Todos los cursos, salvo a lo más el último, deben tener todas sus asignaturas evaluadas.
+inv TodasLasAsignaturasEvaluadas: let maxAnio : Integer = Curso.allInstances->collect(anio)->max() in 
+                                self.anio <> maxAnio implies self.imparticionAsignatura.matricula->forAll(m|m.calificacion <> null)
+
+context Persona 
+
+-- Requisito #11. Los profesores no pueden matricularse en aquellas asignaturas que imparten ese curso, aunque sí en otras.
+inv NoSeDaClaseASiMismo: self.docencia->forAll(i|i.alumno->excludes(self))
+
+
+context Curso 
+
+-- los cursos comienzan en años distintos
+inv AniosDistintos: Curso.allInstances->forAll(c1,c2|c1<>c2 implies c1.anio<>c2.anio)
+
+
+context Titulo 
+
+-- Requisito #12. El titulo tiene que tener los creditos aprobados. Junto con:
+-- Requisito #13. La fecha del titulo tiene que ser posterior o igual a las de aprobar las asignaturas correspondientes.
+-- Para eso comprobamos que el curso expresado en el titulo el alumno tiene aprobados mas de los creditos correspondientes.
+-- Ojo que la fecha no puede ser derivada porque el alumno puede matricularse de mas asignaturas de esa titulacion
+-- posteriormente a la obtencion del titulo
+inv FechaCorrecta: let imparticionAsignaturasAprobadas:Set(ImparticionAsignatura) = self.persona.matricula->select(aprobada)->collect(imparticionAsignatura)->select(ia|ia.curso.anio<=self.curso.anio and self.titulacion.asignatura->includes(ia.asignatura))->asSet() in
+                    imparticionAsignaturasAprobadas->collect(asignatura.creditos)->sum() >= if self.titulacion.oclIsTypeOf(Master) then 60 else 240 endif
+
+
+context Persona 
+
+-- Requisito #15. si esta matriculado de una asignatura de master, tiene que tener un titulo de grado
+-- Ojo que puede haber asignaturas de grado y de master
+inv MatriculaMasterConTituloGrado: self.imparticionAsignatura.asignatura->select(a| a.titulacion->forAll(t|t.oclIsTypeOf(Master)))->notEmpty() implies self.titulo->select(t|t.titulacion.oclIsTypeOf(Grado))->notEmpty()

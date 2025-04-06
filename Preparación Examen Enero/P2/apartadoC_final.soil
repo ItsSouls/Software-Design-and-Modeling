@@ -1,0 +1,14 @@
+reset
+!new Ciudad('Malaga')
+!new Ciudad('Sevilla')
+!new Ciudad('Granada')
+!insert(Malaga,Sevilla) into Recorrido --Recorrido1
+!Recorrido1.kilometros := 210
+!insert(Sevilla,Granada) into Recorrido --Recorrido2
+!Recorrido2.kilometros := 250
+!new Coche('c1')
+!c1.matriculacion := 0
+!c1.velocidad := 27
+!insert(c1,Malaga) into UbicacionCoche
+!new Clock('c')
+!insert(c,c1) into Time

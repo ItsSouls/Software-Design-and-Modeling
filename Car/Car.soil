@@ -1,0 +1,22 @@
+reset 
+!new Clock('c')
+!new Car('a')
+!insert(c,a) into Time
+check
+!c.tick()
+?a.position
+!a.startMoving()
+?a.position
+!c.run(5)
+?a.position
+!a.accelerate()
+?a.position
+!c.run(5)
+?a.position
+!a.decelerate()
+?a.position
+!c.run(5)
+?a.position
+!a.stopMoving()
+!c.run(5)
+?a.position

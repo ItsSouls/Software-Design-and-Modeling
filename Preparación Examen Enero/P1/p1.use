@@ -1,0 +1,172 @@
+model Aviacion
+
+enum estadoAvion {Volando, Estacionado, Relegado}
+
+--Clases--------------
+class Avion
+attributes
+    vuelos: Integer derive:
+                        self.vuelosRealizados -> size()
+    kilometros: Real derive:
+                        self.vuelosRealizados -> collect(k | k.kilometros) -> sum()
+    estado: estadoAvion
+end
+
+class Aerolinea
+attributes
+    nombre: String
+end
+
+class Aeropuerto
+attributes
+    ciudad: String
+end
+
+class Vuelo
+attributes
+    id: Integer
+    kilometros: Real 
+end
+
+class Hangar
+attributes
+    capacidad: Integer
+end
+
+class Desguace
+attributes
+    capacidad: Integer
+end
+
+class Persona
+attributes
+    nombre: String
+    edad: Integer
+end
+
+class Piloto
+attributes
+    pro: Boolean derive:
+                    self.vueloPrincipal -> size() >= 1000 and self.vueloSecundario -> size() >= 2000
+    kmvolados: Real derive:
+                    self.vueloPrincipal -> collect(k | k.kilometros) -> sum() + self.vueloSecundario -> collect(k | k.kilometros) -> sum()
+end
+
+class Pasajero
+end
+
+--Relaciones--
+
+associationclass Contrato between
+    Aerolinea [*] role aerolinea
+    Avion [*] role avion
+attributes
+    meses: Integer
+    preciomes: Real
+    precioTotal: Real derive:
+                        self.meses * self.preciomes
+end
+
+composition esRealizado between 
+    Avion [1] role avionUsado
+    Vuelo [*] role vuelosRealizados
+end
+
+association Volando between 
+    Avion [0..1] role avionVolando
+    Vuelo [0..1] role vueloEnCurso
+end
+
+association esArreglado between
+    Avion [*] role avion
+    Desguace [0..1] role desguace
+end
+
+association esGuardado between
+    Avion [*] role avion
+    Hangar [0..1] role hangar
+end
+
+composition HangarSeEncuentra between 
+    Aeropuerto [1] role aeropuerto
+    Hangar [0..1] role hangar
+end
+
+composition DesguaceSeEncuentra between 
+    Aeropuerto [1] role aeropuerto
+    Desguace [*] role desguace
+end
+
+association Trabaja between
+    Aerolinea [0..2] role aerolinea
+    Piloto [*] role piloto
+end
+
+association PilotajePrincipal between
+    Piloto [1] role pilotoPrincipal
+    Vuelo [*] role vueloPrincipal
+end
+
+association PilotajeSecundario between
+    Piloto [0..1] role pilotoSecundario
+    Vuelo [*] role vueloSecundario
+end
+
+association esPiloto between
+    Piloto [0..1] role piloto
+    Persona [1] role persona
+end
+
+association esPasajero between
+    Persona [1] role persona
+    Pasajero [0..1] role pasajero
+end
+
+association Viaja between
+    Pasajero [*] role pasajeros
+    Vuelo [1] role vuelo
+end
+
+--RESTRICCIONES--
+constraints
+context Avion
+
+    inv estadoValido: self.estado = #Volando or self.estado = #Estacionado or self.estado = #Relegado
+
+    inv relegadoPorVuelos: self.vuelos >= 1000 implies self.estado = #Relegado
+
+    inv relegadoADesguace: self.estado = #Relegado implies self.hangar -> size() = 0 and self.vueloEnCurso -> size() = 0 and self.desguace -> size() = 1
+
+    inv estacionadoEnHangar: self.estado = #Estacionado implies self.hangar -> size() = 1 and self.vueloEnCurso -> size() = 0 and self.desguace -> size() = 0
+
+    inv AvionEnElAire: self.estado = #Volando implies self.hangar -> size() = 0 and self.vueloEnCurso -> size() = 1 and self.desguace -> size() = 0
+
+context Hangar
+
+    inv maxHangar: self.avion -> size() <= self.capacidad
+
+context Desguace
+
+    inv maxDesguace: self.avion -> size() <= self.capacidad
+
+context Piloto
+
+    inv pilotoNoMasDeDosAerolineas: self.aerolinea -> size <= 2 --sobraría? porque la relación lo restringe
+
+    inv pilotoMayorDeEdad: self.persona.edad >= 18
+
+context Vuelo
+
+    inv pilotosSonPersonasDistintas: if self.pilotoSecundario <> null then self.pilotoPrincipal <> self.pilotoSecundario else true endif
+
+    inv idVueloDiferente: Vuelo.allInstances() -> isUnique (i | i.id)
+
+    inv pilotoNoPuedeSerNulo: self.pilotoPrincipal <> null
+
+context Aeropuerto
+
+    inv unAeropuertoPorCiudad: Aeropuerto.allInstances() -> isUnique(a | a.ciudad)
+
+context Aerolinea
+
+    inv nombreAerolineaDiferente: Aerolinea.allInstances() -> isUnique (n | n.nombre)

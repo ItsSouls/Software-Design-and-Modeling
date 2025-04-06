@@ -1,0 +1,115 @@
+reset
+
+!new Avion('ABC967')
+!ABC967.estado := #Relegado
+!new Avion('Hola')
+!Hola.estado := #Relegado
+!new Avion('Adios')
+!Adios.estado := #Relegado
+
+!new Desguace ('Desguace2')
+!Desguace2.capacidad := 2
+
+!insert(Hola,Desguace2) into SeEncuentra
+!insert(Adios,Desguace2) into SeEncuentra
+!insert(ABC967,Desguace2) into SeEncuentra
+
+!new Avion ('ABC968')
+!ABC968.estado := #Volando
+
+!new Vuelo('AGP2024')
+!AGP2024.kilometros := 2000
+
+!new Vuelo('vuelo2')
+!new Vuelo('vuelo3')
+
+!new Aerolinea('Vueling')
+!new Aerolinea('Ryanair')
+
+!new Piloto('Pil2')
+!Pil2.nombre := 'Borja'
+!new Piloto ('Pil3')
+!Pil3.nombre := 'Lucía'
+
+!new Aeropuerto('Barajas')
+!Barajas.ciudad := 'Madrid'
+
+!new Aeropuerto('hola')
+!hola.ciudad := 'Madrid'
+
+!insert(ABC968,AGP2024) into EsRealizado
+!insert(ABC968,vuelo2) into EsRealizado
+!insert(ABC968,vuelo3) into EsRealizado
+!insert(Vueling,Pil2) into Trabajo
+!insert(Ryanair,Pil3) into Trabajo
+!insert(AGP2024,Pil2) into PilotajePrincipal
+!insert(AGP2024,Pil3) into PilotajeSecundario
+
+!new Avion('ABC123')
+!ABC123.estado := #Estacionado
+
+!new Avion('ABC987')
+!ABC987.estado := #Estacionado
+
+!new Avion('ABC1000')
+!ABC1000.estado := #Estacionado
+
+!new Vuelo ('IBZ2034')
+
+!new Aerolinea('Iberia')
+!new Aerolinea('AirEurope')
+!new Aerolinea('AirFrance')
+
+!new Aeropuerto('Barajas')
+!Barajas.ciudad := 'Madrid'
+
+!new Piloto('Pil1')
+!Pil1.nombre := 'Pepe'
+!new Piloto('Pil4')
+!Pil4.nombre := 'Ana'
+
+!insert(Iberia,Pil1) into Trabajo
+!insert(AirEurope,Pil4) into Trabajo
+!insert(AirFrance,Pil1) into Trabajo
+!insert(AirEurope,Pil1) into Trabajo
+
+!insert(Iberia, ABC123) into Contrato
+!Contrato1.meses := 24
+!Contrato1.precioMes := 10000
+
+!new Hangar('Hangar1')
+!Hangar1.capacidad := 2
+
+!new Desguace('Desguace1')
+!Desguace1.capacidad := 4
+
+!insert(Barajas,Desguace1) into DisponeDesguace
+!insert(Barajas,Hangar1) into DisponeHangar
+
+!insert(ABC123,Hangar1) into SeEncuentra
+!insert(ABC1000,Hangar1) into SeEncuentra
+!insert(ABC987,Hangar1) into SeEncuentra
+
+!insert(IBZ2034,Pil1) into PilotajePrincipal
+!insert(IBZ2034,Pil1) into PilotajeSecundario
+
+!new Avion('Avionerroneo')
+!Avionerroneo.estado := #paco
+
+!new Avion('ABC1234')
+!ABC1234.estado := #Estacionado
+!insert(ABC1234,Desguace1) into SeEncuentra
+
+!new Hangar('Hangar2')
+!Hangar1.capacidad := 2
+
+!new Avion('ABC12345')
+!ABC12345.estado := #Relegado
+!insert(ABC12345,Hangar2) into SeEncuentra
+
+!new Avion('ZZZ2')
+!ZZZ2.estado := #Volando
+!new Vuelo ('vuelo4')
+!new Vuelo ('vuelo5')
+!insert(ZZZ2, vuelo4) into EsRealizado
+!insert(ZZZ2, vuelo5) into EsRealizado

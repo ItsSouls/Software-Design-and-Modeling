@@ -1,0 +1,59 @@
+reset
+
+!new Clock ('Reloj')
+
+!new Ciudad('Malaga')
+!new Ciudad('Sevilla')
+!new Ciudad('Granada')
+
+!insert(Malaga, Sevilla) into Recorrido
+!Recorrido1.kilometros := 210
+
+!insert(Sevilla, Granada) into Recorrido
+!Recorrido2.kilometros := 250
+
+!new Coche ('Toyota')
+!Toyota.fechaMatriculacion := 0
+!Toyota.velocidad := 27
+
+!insert(Reloj, Toyota) into Time
+
+!insert(Toyota, Malaga) into UbicacionCoche
+
+-- Fin del instante 0
+
+!Reloj.tick() -- Dia 1
+!Reloj.tick() -- Dia 2
+!Reloj.tick() -- Dia 3
+!Reloj.tick() -- Dia 4
+!Reloj.tick() -- Dia 5
+
+!Toyota.viajar(Malaga, Sevilla)
+
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+
+-- Llegada a Sevilla
+
+!Toyota.viajar(Sevilla, Granada)
+
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+!Reloj.tick()
+
+-- Llegada a Granada
+
+check

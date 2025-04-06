@@ -1,0 +1,38 @@
+model avion
+
+class src.todo.Avion
+end
+
+class Aerolinea
+end
+
+class src.todo.Alquiler
+attributes
+    comienzo: Integer
+    duracion: Integer
+    precio: Integer
+end
+
+association AvionAlquiler between
+    src.todo.Avion [1] role avion
+    src.todo.Alquiler [1..*] role alquiler
+end
+
+association AerolineaAlquiler between
+    Aerolinea [1] role Aerolinea
+    src.todo.Alquiler [*] role alquiler
+end
+
+constraints
+
+context src.todo.Alquiler
+inv AtributosPositivos: self.precio >= 0 and self.duracion >= 0 and self.comienzo >= 0
+
+context src.todo.Avion
+inv NoMasdeCuatroAnos: self.alquiler -> select(a | a.duracion > 4) -> size() <= 2
+
+inv AnosNoCoinciden: self.alquiler -> forAll(a1, a2 | a1 <> a2 implies a1.comienzo <> a2.comienzo)
+
+context Aerolinea
+inv VeintePorCientoNoMasdeCincoAnos: self.alquiler -> select(a | a.duracion > 5) -> size() <= self.alquiler -> size() * 0.2
+

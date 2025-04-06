@@ -1,0 +1,82 @@
+reset
+
+!new Avion('ABC123')
+!ABC123.estado := #Estacionado
+
+!new Aerolinea('Iberia')
+
+!new Aeropuerto('Barajas')
+!Barajas.ciudad := 'Madrid'
+
+!new Piloto('Pil1')
+!Pil1.nombre := 'Pepe'
+!Pil1.edad := 52
+
+!insert(Iberia,Pil1) into Trabajo
+
+!insert(Iberia, ABC123) into Contrato
+!Contrato1.meses := 24
+!Contrato1.precioMes := 10000
+
+!new Hangar('Hangar1')
+!Hangar1.capacidad := 3
+
+!new Desguace('Desguace1')
+!Desguace1.capacidad := 4
+
+!insert(Barajas,Desguace1) into DisponeDesguace
+!insert(Barajas,Hangar1) into DisponeHangar
+
+!insert(ABC123,Hangar1) into SeEncuentra
+
+!new Avion('ABC967')
+!ABC967.estado := #Relegado
+
+!new Aerolinea('Vueling')
+
+!new Aeropuerto('PalmaMallorca')
+!PalmaMallorca.ciudad := 'Palma'
+
+!new Piloto('Pil2')
+!Pil2.nombre := 'Borja'
+!Pil2.edad := 34
+!new Piloto ('Pil3')
+!Pil3.nombre := 'Lucía'
+!Pil3.edad := 49
+
+!new Desguace ('Desguace2')
+!Desguace2.capacidad := 2
+
+!new Hangar ('Hangar2')
+!Hangar2.capacidad := 3
+
+!new Vuelo('AGP2024')
+!AGP2024.kilometros := 2000
+
+!new Vuelo ('GRD2003')
+!GRD2003.kilometros := 800
+
+!new Pasajero ('Pas1')
+!Pas1.nombre := 'Pedro'
+!Pas1.edad := 21;
+
+!insert(Vueling, ABC967) into Contrato
+!Contrato2.meses := 36
+!Contrato2.precioMes := 18000
+
+!insert(ABC967,Desguace2) into SeEncuentra
+!insert(Vueling,Pil2) into Trabajo
+!insert(Vueling,Pil3) into Trabajo
+!insert(Vueling,Pil1) into Trabajo
+
+!insert(PalmaMallorca,Desguace2) into DisponeDesguace
+!insert(PalmaMallorca,Hangar2) into DisponeHangar 
+
+!insert(ABC967,AGP2024) into EsRealizado
+!insert (ABC967,GRD2003) into EsRealizado
+
+
+!insert(AGP2024,Pil2) into PilotajePrincipal
+!insert(AGP2024,Pil3) into PilotajeSecundario
+
+!insert(Pas1,AGP2024) into Viaja--/

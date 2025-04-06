@@ -1,0 +1,31 @@
+reset 
+!new Clock('clock')
+!clock.now := 0
+
+!new Ciudad('Malaga')
+!new Ciudad('Sevilla')
+!new Ciudad('Granada')
+
+!insert(Malaga,Sevilla) into Recorrido
+!Recorrido1.kilometros := 100
+
+!insert(Malaga,Granada) into Recorrido
+!Recorrido2.kilometros := 200
+
+!insert(Granada,Sevilla) into Recorrido
+!Recorrido3.kilometros := 300
+
+!new Coche ('Coche1')
+!Coche1.matriculacion := 1
+
+!insert(Coche1,Malaga) into UbicacionCoche
+
+!new Taller('Taller1')
+!insert(Malaga,Taller1) into UbicacionTaller
+
+!new Revision('Revision1')
+!Revision1.fechaInicio := 1
+!Revision1.fechaFin := 2
+!Revision1.tipo := #Mantenimiento
+
+!insert(Taller1,Revision1) into TallerRevision

@@ -1,0 +1,114 @@
+reset
+
+!new Clock ('Reloj1')
+-- Falla PositiveResolution
+!Reloj1.resolution := -1
+
+--Falla relojUnico
+!new Clock ('Reloj2')
+
+!new Ciudad('Malaga')
+!new Ciudad('Sevilla')
+!new Ciudad('Granada')
+
+!insert(Malaga, Sevilla) into Recorrido
+--Falla minRecorridoParaTodasLasCiudades
+!Recorrido1.kilometros := 2
+
+!new TallerOficial('TallerOficialSevilla')
+!TallerOficialSevilla.duracionGarantia := 10
+!new TallerOficial('TallerOficialSevilla2')
+!insert(Sevilla, TallerOficialSevilla) into UbicacionTaller
+
+--Falla soloUnTallerOficial
+!insert(Sevilla, TallerOficialSevilla2) into UbicacionTaller
+
+!new Coche('Toyota')
+!Toyota.fechaMatriculacion := 0
+!Toyota.velocidad := 27
+!insert(Toyota, Malaga) into UbicacionCoche
+
+!new Viaje('ViajeToyota1')
+!ViajeToyota1.fechaSalida := 5
+!insert(Toyota, ViajeToyota1) into Viajar
+
+--Falla origenYDestinoDistintos
+!insert(ViajeToyota1, Malaga) into OrigenViaje
+!insert(ViajeToyota1, Malaga) into DestinoViaje
+
+--Falla llegadaMayorIgualSalida
+!new Viaje('ViajeToyota2')
+!ViajeToyota2.fechaSalida := 5
+!ViajeToyota2.fechaLlegada := 3
+
+--Falla tipoRevisionEspecificado
+!new Taller('TallerGenerico')
+!TallerGenerico.iniciarRevision(Toyota)
+
+--Falla finMayorIgualInicio
+!new Revision('RevisionToyota1')
+!RevisionToyota1.fechaInicio := 10
+!RevisionToyota1.fechaFin := 5
+
+
+--Falla noMultiplesViajesActivos
+!new Coche('Audi')
+!Audi.fechaMatriculacion := 0
+!Audi.velocidad := 27
+!insert(Audi, Jaen) into UbicacionCoche
+
+!new Ciudad('Jaen')
+!new Ciudad('Cadiz')
+!new Ciudad('Cordoba')
+
+!insert(Jaen, Cadiz) into Recorrido
+!insert(Cadiz, Cordoba) into Recorrido
+
+
+!new Viaje('ViajeAudi1')
+!ViajeAudi1.fechaSalida := 5
+!insert(Audi, ViajeAudi1) into Viajar
+!insert(ViajeAudi1, Jaen) into OrigenViaje
+!insert(ViajeAudi1, Cadiz) into DestinoViaje
+
+!new Viaje('ViajeAudi2')
+!ViajeAudi2.fechaSalida := 10
+!insert(Audi, ViajeAudi2) into Viajar
+!insert(ViajeAudi2, Cadiz) into OrigenViaje
+!insert(ViajeAudi2, Cordoba) into DestinoViaje
+
+
+--Falla enViajeOEnCiudad
+--!delete(Toyota, Malaga) from UbicacionCoche
+
+
+-- Falla cocheEnDestinoAlFinalizarViaje
+!new Coche('BMW')
+!BMW.fechaMatriculacion := 0
+!BMW.velocidad := 100
+!insert(BMW, Madrid) into UbicacionCoche
+
+
+!new Ciudad('Madrid')
+!new Ciudad('Barcelona')
+!new Ciudad('Valencia')
+!new Ciudad('Sevilla')
+
+
+!insert(Madrid, Barcelona) into Recorrido
+!insert(Barcelona, Valencia) into Recorrido
+!insert(Barcelona, Sevilla) into Recorrido
+
+!new Viaje('ViajeBMW2')
+!ViajeBMW2.fechaSalida := 10
+!insert(BMW, ViajeBMW2) into Viajar
+!insert(ViajeBMW2, Barcelona) into OrigenViaje
+!insert(ViajeBMW2, Valencia) into DestinoViaje
+!ViajeBMW1.fechaLlegada := 15
+
+!insert(BMW, Sevilla) into UbicacionCoche
+
+
+!ViajeBMW2.fechaLlegada := 20
+
+!new Coche('Mercedes')

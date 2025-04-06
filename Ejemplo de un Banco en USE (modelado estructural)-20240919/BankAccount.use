@@ -1,0 +1,38 @@
+model BankAccount
+
+class Bank
+end
+
+class Account
+attributes
+balance : Integer
+end
+
+class Person
+attributes
+age : Integer
+end
+
+association Ownership between
+Person [1] role owner
+Account [*] role accounts
+end
+
+association Use between
+Person [*] role user
+Account [*] role usedAccounts
+end
+
+
+composition AccountOfBanks between
+Bank [1] role bank
+Account [*] role accounts
+end
+
+
+constraints
+context Account inv AdultOwners:
+    self.owner.age > 18 
+	
+context Account inv positiveBalance:
+    self.balance > 0

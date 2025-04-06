@@ -1,0 +1,142 @@
+model P2revision
+
+enum tipoRevision {Mantenimiento, Averia}
+
+class Ciudad
+end
+
+class Clock
+attributes
+    now: Integer
+end
+
+class Coche
+attributes
+    matriculacion: Integer
+    kmRecorridos: Integer derive: self.viaje -> select(v | v.fechaLlegada <> null) -> collect(v | v.recorrido.kilometros) -> sum()
+    enGarantia: Boolean derive: let ahora: Integer = Clock.allInstances() -> asSequence() -> first().now in
+                                            ahora - self.matriculacion <= 400
+                                            or self.revision -> select(t | t.taller.oclIsTypeOf(TallerOficial)) -> exists(t| t.fechaFin + t.taller.oclAsType(TallerOficial).duracionGarantia >= ahora)
+    necesitaMantenimiento: Boolean derive: let ahora: Integer = Clock.allInstances() -> asSequence() -> first().now in
+                                            ahora - self.matriculacion > 400 
+                                            and not self.revision -> exists(r | r.tipo = #Mantenimiento and ahora - r.fechaFin <= 100)
+end
+
+class Viaje
+attributes
+    fechaSalida: Integer
+    fechaLlegada: Integer
+end
+
+class Revision
+attributes
+    fechaInicio: Integer
+    fechaFin: Integer
+    tipo: tipoRevision
+end
+
+class Taller
+end
+
+class TallerOficial < Taller 
+attributes
+    duracionGarantia: Integer
+end
+
+--Relaciones--
+associationclass Recorrido between
+Ciudad [*] role ciudad1
+Ciudad [*] role ciudad2
+attributes
+    kilometros: Integer
+end
+
+association UbicacionCoche between
+    Coche [*] role coche
+    Ciudad [1] role ciudad
+end
+
+association CocheRevision between
+    Coche [1] role coche
+    Revision [*] role revision
+end
+
+composition TallerRevision between
+    Taller [1] role taller
+    Revision [*] role revision
+end
+
+composition Viajar between
+    Coche [1] role coche
+    Viaje [*] role viaje
+end
+
+composition UbicacionTaller between
+    Ciudad [1] role ciudad
+    Taller [*] role taller
+end
+
+association RecorridoViaje between
+    Viaje [1] role viaje
+    Recorrido [1] role recorrido
+end
+
+association OrigenViaje between
+    Ciudad [1] role ciudadorigen
+    Viaje [*] role origenviaje
+end
+
+association DestinoViaje between
+    Ciudad [1] role ciudaddestino
+    Viaje [*] role destinoviaje
+end
+
+constraints
+
+context Recorrido
+    -- Requisito 1: La Distancia entre ciudades debe ser mayor a 5
+    inv DistanciaMayorACinco: self.kilometros >= 5
+    
+    -- # Requisito 1: Las ciudades tienen que ser únicas
+    inv CiudadesDistintas: self.ciudad1 <> self.ciudad2
+
+context Ciudad
+    -- Requisito 6. En cada ciudad hay como mucho un solo taller oficial
+    inv UnicoTallerOficial : self.taller -> select(t | t.oclIsTypeOf(TallerOficial)) -> size() <= 1
+
+context Coche
+    -- Requisito 5: Una Revision como mucho al mismo tiempo
+    inv MaximoUnaRevisionActualmente:
+    self.revision -> select(r|r.fechaFin=null) -> size <= 1
+
+    -- Requisito 4: Las revisión tiene que ser despues de la matriculación del coche:
+    inv RevisionDespuesDeMatriculacion: self.revision -> forAll (f | f.fechaInicio > self.matriculacion)
+
+    -- Requisito 7: Coche en misma ciudad que el taller si está en revisión:
+    inv EnRevisionMismaCiudadQueTaller: if(self.revision -> select(r | r.fechaFin = null) -> size = 1)
+                                        then self.ciudad = self.revision -> select(r | r.fechaFin = null) -> asSequence -> first().taller.ciudad
+                                        else true
+                                        endif
+
+    -- Requisito 8: todo viaje terminado tendrá una fecha de salida y una fecha de llegada. Si el coche está realizando algún viaje no tendrá fecha de llegada.
+    inv FechaLlegadaNulaSiEstaEnViaje: self.viaje -> select(v | v.fechaLlegada = null) -> size() <= 1
+
+    -- Requisito 9: O bien en Ciudad o Bien Viajando
+    inv EnViajeOEnCiudad: (self.viaje -> select(v | v.fechaLlegada = null) -> size() = 1 ) xor (self.ciudad -> size() = 1) 
+
+    -- Requisito 10: Coche no Viajando pero con algún viaje completado debe estar en la última ciudad de llegada
+    inv CiudadDestinoSiViajeNoEnCurso:  (self.viaje -> size() > 0) and self.viaje -> forAll(v | v.fechaLlegada <> null)
+                                        implies self.ciudad -> size() = 1 and self.ciudad = self.viaje -> select(v | v.fechaLlegada <> null) -> sortedBy(v | v.fechaLlegada) -> last().ciudaddestino
+    
+    --Requisito 11: Dos Viajes no se pueden solapar en el tiempo, pudiendo la fecha de llegada de uno coincidir con la fecha de salida de otro
+    inv NoViajesSolapados: self.viaje -> forAll(v1,v2 | v1<>v2 implies v1.fechaSalida <> v2.fechaSalida and (v2.fechaSalida >= v1.fechaLlegada or v1.fechaSalida >= v2.fechaLlegada))
+
+    --Requisito 12: Ciudad de Partida Coherente
+    inv CiudadSalidaCoherente: Sequence{1..self.viaje->size-1} -> forAll(i | self.viaje -> asSequence() -> at(i).recorrido.ciudad2 = self.viaje -> asSequence() ->at(i+1).recorrido.ciudad1)
+
+    inv KmRealizados : --Requisito 13. Los km del coche deben ser iguales a la suma de los viajes realizados
+    self.kmRecorridos = self.viaje->select(v| v.fechaLlegada <> null)-> collect(v|v.recorrido.kilometros)->sum()
+    
+
+
+

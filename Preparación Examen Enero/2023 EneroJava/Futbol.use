@@ -1,0 +1,61 @@
+model futbol
+
+class Estadio
+end
+
+class Equipo
+end
+
+
+class Partido
+attributes
+    jugado : Boolean init: false
+    golesLocal : Integer init: 0
+    golesVisitante : Integer init: 0
+operations
+    golLocal()
+        begin
+        end
+    golVisitante()
+        begin
+        end
+end
+
+
+
+association Campo between
+    Estadio[1] role estadio
+    Equipo[*] role equipo
+end
+
+
+association PartidoLocal between
+    Equipo[1] role local
+    Partido[*] role partidoLocal
+end
+
+
+association PartidoVisitante between
+    Equipo[1] role visitante
+    Partido[*] role partidoVisitante
+end
+
+
+association PartidoGanado between
+    Equipo[0..1] role ganador
+    Partido[*] role partidoGanado
+end
+
+
+constraints
+
+context Partido inv LocalGanador:
+    self.jugado and self.golesLocal>self.golesVisitante implies self.ganador = self.local
+context Partido inv VisitanteGanador:
+    self.jugado and self.golesLocal<self.golesVisitante implies self.ganador = self.visitante
+context Partido inv SinGanador:
+    not self.jugado or (self.jugado and self.golesLocal=self.golesVisitante) implies self.ganador->isEmpty()
+context Partido inv EquiposDistintos: 
+    self.local<>self.visitante
+context Partido inv GolesOK: 
+    self.golesLocal>=0 and self.golesVisitante>=0

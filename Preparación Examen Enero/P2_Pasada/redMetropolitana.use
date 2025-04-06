@@ -1,0 +1,140 @@
+model redMetropolitana
+
+enum direccion {Ida, Vuelta}
+
+class Clock
+attributes
+    now: Integer init: 0
+operations
+    tick()
+    begin
+        self.now := self.now + 1;
+        for o in self.activeObject do
+            o.tick();
+        end
+    end
+    post TimePasses: now = now@pre+1
+end
+
+abstract class ActiveObject
+operations
+    tick()
+    begin
+    end
+end
+
+aggregation Time between
+Clock [1] role clock
+ActiveObject [*] role activeObject ordered
+end
+
+class Linea
+attributes
+Nombre : String
+end
+
+class Estacion end
+
+class Via end
+
+class Segmento end
+
+class Tren < ActiveObject
+attributes
+    estaListo : Boolean init : false
+    estaRoto : Boolean init : false
+    Direccion : direccion --true = ida, false = vuelta
+operations
+    viaSiguienteVacia() : Boolean
+    begin
+        if (self.estacion -> size() = 1 and self.Direccion and self.estacion.segmentoorigen -> notEmpty()) and self.estacion.segmentoorigen -> select(s | s.lineaS = self.lineaT) -> asSequence() -> first.viaida.tren -> size() = 0
+        then true;
+        if(self.estacion -> size() = 1 and not self.Direccion and self.estacion.segmentodestino -> notEmpty()) and self.estacion.segmentodestino -> select(s | s.lineaS = self.lineaT) -> asSequence() -> first.viavuelta.tren -> size() = 0
+        then true;
+        else false;
+        end
+    end
+    end
+
+    avanzar()
+        begin
+        if(self.estacion -> notEmpty() and self.via -> isEmpty()) then
+            if(self.estaListo) then
+                insert(self,self.estacion.segmentoorigen -> select(s | s.lineaS -> asSequence() -> first() = self.lineaT) -> asSequence() ->first().viaida) into Circulacion;
+                delete(self,self.estacion) from Parada;
+                self.estaListo := false;
+            else
+            self.estaListo := true;
+            end
+        else
+            insert(self,self.via.segmentoida.estaciondestino) into Parada;
+            delete(self,self.via) from Circulacion;
+        end
+    end
+    pre ViaVacia: self.estacion -> size() = 1 implies self.estacion.segmentoorigen -> exists(s | s.viaida.tren -> isEmpty())
+end
+
+
+association SegmentoOrigen between
+Estacion [1] role estacionorigen
+Segmento [0..*] role segmentoorigen
+end
+
+association SegmentoDestino between
+Estacion [1] role estaciondestino
+Segmento [0..*] role segmentodestino
+end
+
+aggregation Pertenece between
+Linea [1..*] role lineaS
+Segmento [1..*] role segmentos
+end
+
+association Ida between
+Segmento [1] role segmentoida
+Via [1] role viaida
+end
+
+association Vuelta between
+Segmento [1] role segmentovuelta
+Via [1] role viavuelta
+end
+
+association Circulacion between
+Tren [0..1] role tren
+Via [1] role via
+end
+
+association Parada between
+Tren [*] role tren
+Estacion [0..1] role estacion
+end
+
+association Ruta between
+Tren [*] role tren
+Linea [1] role lineaT
+end
+
+constraints
+
+context Segmento
+-- Dos Segmentos que conectan mismas estaciones deben ser de líneas distintas
+inv LineasDistintasEstacionSegmentos: Segmento.allInstances() -> forAll(s1,s2 | s1 <> s2 and s1.estacionorigen = s2.estacionorigen and s1.estaciondestino = s2.estaciondestino implies s1.lineaS <> s2.lineaS)
+
+--Cada segmento conecta dos estaciones Distintas
+inv EstacionesDiferentes: self.estacionorigen <> self.estaciondestino
+
+context Via
+--la estacion de destino del segmento de ida es la estación de origen del segmentto de vuelta y viceversa
+inv ViaBienDefinida: self.segmentoida.estaciondestino = self.segmentovuelta.estacionorigen and self.segmentovuelta.estaciondestino = self.segmentoida.estacionorigen
+
+context Tren
+--El tren estará en circulacion o en una estación parado, pero no en ambos sitios a la vez
+inv TrenenEstacionOenCirculacion: self.via -> size() = 1 xor self.estacion -> size() = 1
+
+context Via
+--en un momento dado solo puede haber a lo sumo un tren en cada segmento de vía en cada sentido
+inv UnSoloTrenEnVia: self.tren -> size() <= 1
+
+--Cada via tiene segmento de ida y de vuelta 
+inv DiferenteDireccionVia: self.segmentoida -> notEmpty() and self.segmentovuelta -> notEmpty()
