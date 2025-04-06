@@ -1,0 +1,243 @@
+model P2a
+
+enum TipoRevision {Mantenimiento, Averia}
+
+class Clock
+  attributes
+    now : Integer init = 0
+    resolution: Integer init = 1
+
+  operations
+    tick()
+    begin
+      self.now := self.now + self.resolution;
+      for o in self.ao do
+          o.action()
+      end;
+    end
+    post TimePasses: self.now  = self.now@pre + self.resolution
+end
+
+abstract class ActiveObject
+  operations
+    action() begin end
+end
+
+association Time between
+  Clock [1] role clock
+  ActiveObject [*] role ao ordered
+end
+
+class Coche < ActiveObject
+    attributes
+        fechaMatriculacion: Integer
+        kilometrosRecorridos: Integer derive: self.viajeRealizado -> select(v | v.fechaLlegada <> null) -> collect(v | v.kmRecorridos) -> sum()
+        enGarantia: Boolean derive:
+            if self.clock.now < self.fechaMatriculacion + 400 then
+                true
+            else
+                let ultRevisTallerOficial: Revision =
+                    self.revision -> select(r | r.taller.oclIsTypeOf(TallerOficial) and r.fechaFin <> null) -> sortedBy(r | r.fechaFin) -> last() in
+                if ultRevisTallerOficial <> null then
+                    let duracionGarantia: Integer =
+                        ultRevisTallerOficial.taller.oclAsType(TallerOficial).duracionGarantia in
+                    self.clock.now < (ultRevisTallerOficial.fechaFin + duracionGarantia)
+                else
+                    false
+                endif
+            endif
+       necesitaMantenimiento: Boolean derive:
+            if self.revision -> exists(r | r.fechaFin = null and r.tipoRevision = #Mantenimiento) then
+                false
+            else
+                let ultMantenimiento: Revision =
+                    self.revision -> select(r | r.tipoRevision = #Mantenimiento) -> sortedBy(r | r.fechaFin) -> last() in
+                let tiempoDesdeUltMantenimiento: Integer =
+                    self.clock.now - ultMantenimiento.fechaFin + ultMantenimiento.fechaInicio in
+                let tiempoDesdeMatriculacion: Integer =
+                    self.clock.now - self.fechaMatriculacion in
+                if (ultMantenimiento <> null and tiempoDesdeUltMantenimiento >= 100) or tiempoDesdeMatriculacion > 400 then
+                    true
+                else
+                    false
+                endif
+            endif
+        velocidad: Integer
+
+    operations
+        viajar(c1: Ciudad, c2: Ciudad)
+        begin
+            declare v: Viaje;
+            v := new Viaje;
+            v.fechaSalida := self.clock.now;
+            v.fechaLlegada := null;
+            insert(self, v) into Viajar;
+            insert(v, c1) into OrigenViaje;
+            insert(v, c2) into DestinoViaje;
+            delete(self, c1) from UbicacionCoche;
+        end
+        pre origenCoche : c1 <> c2 and self.ciudad -> includes(c1) and self.viajeRealizado -> forAll(v | v.fechaLlegada <> null)
+        post destinoCoche : self.ciudad -> excludes(c1) and self.ciudad -> excludes(c2)
+
+        avanzar()
+        begin
+            if(self.viajeRealizado -> exists(v | v.fechaLlegada = null) and
+                          self.viajeRealizado -> select(v | v.fechaLlegada = null) -> asSequence() -> last().kmRecorridos <
+                          Recorrido.allInstances() -> select(r | (r.ciudad1 = self.viajeRealizado -> asSequence() -> last().ciudadOrigen and r.ciudad2 = self.viajeRealizado -> asSequence() -> last().ciudadDestino or r.ciudad1 = self.viajeRealizado -> asSequence() -> last().ciudadDestino and r.ciudad2 =  self.viajeRealizado -> asSequence() -> last().ciudadOrigen)) -> asOrderedSet() -> last().kilometros) then
+
+                    declare v: Viaje, rec: Integer;
+                    v := self.viajeRealizado -> select(v | v.fechaLlegada = null) -> asSequence() -> last();
+                    rec := Recorrido.allInstances() -> select(r | (r.ciudad1 = self.viajeRealizado -> asSequence() -> last().ciudadOrigen and r.ciudad2 = self.viajeRealizado -> asSequence() -> last().ciudadDestino or r.ciudad1 = self.viajeRealizado -> asSequence() -> last().ciudadDestino and r.ciudad2 =  self.viajeRealizado -> asSequence() -> last().ciudadOrigen)) -> asOrderedSet() -> last().kilometros;
+                    if (v <> null) then
+                        if (v.kmRecorridos + self.velocidad >= rec) then
+                            v.kmRecorridos := rec;
+                            v.fechaLlegada := self.clock.now; -- Asignamos el tiempo de llegada solo una vez
+                            insert(self, v.ciudadDestino) into UbicacionCoche;
+                        else
+                            v.kmRecorridos := v.kmRecorridos + self.velocidad;
+                        end;
+                    end;
+            end;
+        end
+        post viajefinalizado: self.viajeRealizado -> forAll(v | v.fechaLlegada <> null) implies (self.viajeRealizado -> select(v | v.fechaLlegada = null) -> asSequence() -> last().kmRecorridos = (self.viajeRealizado -> select(v | v.fechaLlegada = null) -> asSequence() -> last().kmRecorridos@pre) + self.velocidad)
+
+        action()
+        begin
+            self.avanzar();
+        end
+end
+
+class Ciudad
+end
+
+class Viaje
+attributes
+    fechaSalida: Integer
+    fechaLlegada: Integer
+    kmRecorridos: Integer init = 0
+end
+
+class Taller
+ operations
+    iniciarRevision(c: Coche, t: TipoRevision)
+    begin
+        declare r: Revision;
+        r := new Revision;
+        insert(c, r) into CocheRevision;
+        insert(self, r) into TallerRevision;
+        r.fechaInicio := c.clock.now;
+        r.tipoRevision := t;
+    end
+    pre fechaRev : self.revision -> select(r | r.coche = c and r.coche.ciudad = c.ciudad) -> forAll(f | f.fechaInicio > c.fechaMatriculacion) and
+                    c.viajeRealizado -> forAll(v | v.fechaLlegada <> null)
+
+    finalizarRevision(r: Revision)
+    begin
+        r.fechaFin := r.coche.clock.now;
+    end
+end
+
+class TallerOficial < Taller
+attributes
+    duracionGarantia: Integer
+end
+
+class Revision
+attributes
+    fechaInicio: Integer
+    fechaFin: Integer
+    tipoRevision: TipoRevision
+end
+
+composition Viajar between
+    Coche [1] role coche
+    Viaje [*] role viajeRealizado
+end
+
+association OrigenViaje between
+    Viaje [*] role origen
+    Ciudad [1] role ciudadOrigen
+end
+
+association DestinoViaje between
+    Viaje [*] role destino
+    Ciudad [1] role ciudadDestino
+end
+
+associationclass Recorrido between
+    Ciudad [*] role ciudad1
+    Ciudad [*] role ciudad2
+attributes
+    kilometros: Integer init = 0
+end
+
+composition UbicacionTaller between
+    Ciudad [1] role ciudad
+    Taller [*] role taller
+end
+
+association UbicacionCoche between
+    Coche [*] role coche
+    Ciudad [0..1] role ciudad
+end
+
+composition TallerRevision between
+    Taller [1] role taller
+    Revision [*] role revision
+end
+
+association CocheRevision between
+    Coche [1] role coche
+    Revision [*] role revision
+end
+
+
+constraints
+
+context Viaje
+    -- Un viaje debe tener una ciudad de origen y una de destino distintas entre sí.
+    inv origenYDestinoDistintos: self.ciudadDestino <> self.ciudadOrigen
+
+    -- Dos viajes no pueden solaparse en el tiempo, es decir, un viaje debe ocurrir siempre después de otro.
+    inv llegadaMayorIgualSalida: if self.fechaLlegada <> null then self.fechaLlegada >= self.fechaSalida else true endif
+
+context Revision
+    -- La fecha de fin de la revisión debe ser posterior o igual a la fecha de inicio.
+    inv finMayorIgualInicio: if self.fechaFin <> null then self.fechaFin >= self.fechaInicio else true endif
+
+    -- Cada revisión debe tener un tipo de revisión.
+    inv tipoRevisionEspecificado: self.tipoRevision = #Mantenimiento or self.tipoRevision = #Averia
+
+context Ciudad
+    -- Cada ciudad debe estar al menos a 5 kilómetros de recorrido de otra ciudad.
+    inv minRecorridoParaTodasLasCiudades: Ciudad.allInstances() -> forAll(c1 | Ciudad.allInstances() -> exists(c2 | c1 <> c2 and Recorrido.allInstances() ->
+        exists(d |(d.ciudad1 = c1 and d.ciudad2 = c2 or d.ciudad1 = c2 and d.ciudad2 = c1) and d.kilometros >= 5)))
+
+    -- En una ciudad solo puede haber un taller oficial.
+    inv soloUnTallerOficial: self.taller -> select(t | t.oclIsTypeOf(TallerOficial)) -> size() <= 1
+
+context Coche
+    -- Un coche se encontrará en todo momento bien realizando un viaje determinado o bien en una ciudad.
+    inv enViajeOEnCiudad: (self.viajeRealizado -> exists(v | v.fechaLlegada = null)) xor (self.ciudad -> notEmpty())
+        --xor : nos asegura que solo una de estas condiciones sea verdadera a la vez
+
+    -- Al finalizar un viaje el coche se encuentra en la ciudad destino.
+    inv cocheEnDestinoAlFinalizarViaje: self.viajeRealizado -> exists(v | v.fechaLlegada <> null) implies
+        (self.ciudad = self.viajeRealizado -> select(v | v.fechaLlegada <> null) -> asSequence() -> last().ciudadDestino)
+
+    -- Un coche no puede realizar más de un viaje a la vez.
+    inv noMultiplesViajesActivos: self.viajeRealizado -> select(v | v.fechaLlegada = null) -> size() <= 1
+
+    -- La fecha de matriculación debe ser válida (positiva y menor o igual que la del reloj).
+    inv fechaMatriculacionValida: self.fechaMatriculacion >= 0 and self.fechaMatriculacion <= Clock.allInstances() -> asOrderedSet() -> first().now
+
+context Taller
+    -- Un taller oficial debe tener siempre una duracion de garantía distinta de null.
+    inv tallerOficialGarantia: Taller.allInstances() -> select(t | t.oclIsKindOf(TallerOficial)) -> forAll(t | t.oclAsType(TallerOficial).duracionGarantia <> null)
+
+context Clock
+    -- Existe una única instancia del reloj.
+    inv relojUnico: Clock.allInstances() -> size() = 1
+
+    -- El número de días que pasa al llamar a la operación tick del reloj es positivo.
+    inv PositiveResolution: self.resolution > 0
